@@ -2,7 +2,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-dotgrid-glow flex items-center justify-center">
       <p className="text-md text-text-muted tracking-wide select-none">
-        Start building your app
+        Welcome to Brain Connect AI
       </p>
     </div>
   );
