@@ -13,22 +13,37 @@ import os
 import json
 
 
-DEFAULT_MEDICAL_PROMPT = """You are a medical AI assistant analyzing clinical documents for physicians.
-Extract and structure the following information from the provided medical document:
+CONSENSUS_MEDICAL_PROMPT = """You are a medical AI assistant simulating a consensus conference of 3 physicians analyzing a clinical case. 
+Provide consensus-driven differential diagnoses and personalized treatment plans.
 
-1. **Patient Demographics**: Age, sex, relevant identifiers (anonymized)
-2. **Chief Complaint**: Primary reason for visit/encounter
-3. **History of Present Illness**: Key symptoms, timeline, progression, severity
-4. **Past Medical History**: Relevant conditions, surgeries, hospitalizations
-5. **Medications**: Current medications with doses if available
-6. **Allergies**: Known drug/allergy reactions
-7. **Physical Exam Findings**: Vital signs, relevant positive/negative findings
-8. **Laboratory Results**: Key values with reference ranges, flag abnormalities
-9. **Imaging Results**: Radiology findings, impressions
-10. **Assessment & Plan**: Working diagnoses, differential, treatment plan, follow-up
+CRITICAL FORMAT REQUIREMENTS:
+1. RESPONSE MUST BE EXACTLY 4 PARAGRAPHS
+2. TITLE LINE: "Patient: [Name] | Consensus Differential: [Diagnosis 1] | Treatment Plan: [Plan 1]"
+3. PARAGRAPH 1: Patient history from the PDF (demographics, chief complaint, HPI, PMH, meds, allergies, exam, labs, imaging, assessment)
+4. PARAGRAPH 2: 3 physicians' consensus differential diagnoses in bullet points. Key phrases in *italics*.
+5. PARAGRAPH 3: 3 personalized treatment plans in bullet points. Key phases in *italics*.
+6. PARAGRAPH 4: Observations, next steps, future treatment suggestions.
+7. MAX 2000 words total.
+8. TONE: Polite, professional, US English, US medical standards.
 
-Format as clear, structured JSON. For missing sections, include with "Not documented" value.
-Be precise and clinical. Do not speculate beyond the document content."""
+EXAMPLE FORMAT:
+Patient: John Doe | Consensus Differential: Acute Coronary Syndrome | Treatment Plan: Immediate PCI Pathway
+
+[Paragraph 1: Patient history...]
+
+[Paragraph 2: 
+• Dr. Smith (Cardiology): *Primary consideration* — Acute Coronary Syndrome given...
+• Dr. Chen (Emergency Medicine): *Key differential* — Aortic dissection...
+• Dr. Patel (Internal Medicine): *Must rule out* — Pulmonary embolism...]
+
+[Paragraph 3:
+• *Immediate stabilization*: Aspirin, P2Y12 inhibitor, anticoagulation...
+• *Definitive management*: Early invasive strategy with cardiac catheterization...
+• *Secondary prevention*: High-intensity statin, beta-blocker, ACE inhibitor...]
+
+[Paragraph 4: Observations and next steps...]
+
+Extract ALL clinical data from the PDF. Do not hallucinate. If information is missing, note "Not documented in provided records."""  # noqa: E501
 
 
 class FireworksMedicalAnalyzer:
@@ -117,7 +132,7 @@ class FireworksMedicalAnalyzer:
         
         Args:
             pdf_path: Path to PDF file
-            prompt: Custom analysis prompt (uses default medical prompt if None)
+            prompt: Custom analysis prompt (uses consensus prompt if None)
             dpi: PDF rendering resolution
             
         Returns:
@@ -128,7 +143,7 @@ class FireworksMedicalAnalyzer:
         
         page_images = self.pdf_pages_to_base64(pdf_path, dpi=dpi)
         
-        return self._analyze_images(page_images, prompt or DEFAULT_MEDICAL_PROMPT)
+        return self._analyze_images(page_images, prompt or CONSENSUS_MEDICAL_PROMPT)
     
     def analyze_medical_document_bytes(
         self,
@@ -141,7 +156,7 @@ class FireworksMedicalAnalyzer:
         
         Args:
             pdf_bytes: PDF file content as bytes
-            prompt: Custom analysis prompt (uses default medical prompt if None)
+            prompt: Custom analysis prompt (uses consensus prompt if None)
             dpi: PDF rendering resolution
             
         Returns:
@@ -149,7 +164,7 @@ class FireworksMedicalAnalyzer:
         """
         page_images = self.pdf_bytes_to_base64(pdf_bytes, dpi=dpi)
         
-        return self._analyze_images(page_images, prompt or DEFAULT_MEDICAL_PROMPT)
+        return self._analyze_images(page_images, prompt or CONSENSUS_MEDICAL_PROMPT)
     
     def _analyze_images(self, page_images: List[str], prompt: str) -> Dict[str, Any]:
         """
@@ -182,17 +197,9 @@ class FireworksMedicalAnalyzer:
         # Extract response
         message_content = response.choices[0].message.content
         
-        # Try to parse as JSON if structured
-        parsed_content = None
-        try:
-            parsed_content = json.loads(message_content)
-        except json.JSONDecodeError:
-            # If not JSON, keep as string
-            pass
-        
         return {
             "success": True,
-            "content": parsed_content if parsed_content else message_content,
+            "content": message_content,
             "model": self.model,
             "pages_processed": len(page_images),
             "usage": {
@@ -217,7 +224,7 @@ def analyze_pdf_with_fireworks(
     Args:
         pdf_path: Path to PDF file
         api_key: Fireworks API key (uses env var if not provided)
-        prompt: Custom prompt (uses default medical prompt if None)
+        prompt: Custom prompt (uses consensus prompt if None)
         model: Fireworks model to use
         dpi: PDF rendering resolution
         
@@ -227,7 +234,7 @@ def analyze_pdf_with_fireworks(
     analyzer = FireworksMedicalAnalyzer(api_key=api_key, model=model)
     return analyzer.analyze_medical_document(
         pdf_path=pdf_path,
-        prompt=prompt or DEFAULT_MEDICAL_PROMPT,
+        prompt=prompt or CONSENSUS_MEDICAL_PROMPT,
         dpi=dpi
     )
 

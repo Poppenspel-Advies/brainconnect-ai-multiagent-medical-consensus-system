@@ -11,7 +11,7 @@ from typing import Optional
 import os
 import json
 
-from fireworks_medical import FireworksMedicalAnalyzer, DEFAULT_MEDICAL_PROMPT
+from fireworks_medical import FireworksMedicalAnalyzer, CONSENSUS_MEDICAL_PROMPT
 
 app = FastAPI(title="BrainConnect Medical Analysis API", version="1.0.0")
 
@@ -108,7 +108,7 @@ async def analyze_medical_document(
         # Analyze document
         result = analyzer.analyze_medical_document_bytes(
             pdf_bytes=pdf_bytes,
-            prompt=prompt or DEFAULT_MEDICAL_PROMPT,
+            prompt=prompt or CONSENSUS_MEDICAL_PROMPT,
             dpi=dpi
         )
         
