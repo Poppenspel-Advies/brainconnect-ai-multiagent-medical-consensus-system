@@ -253,7 +253,7 @@ export default function MedicalDocumentUploader() {
               onChange={(e) => setCustomPrompt(e.target.value)}
               rows={4}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono resize-y"
-              placeholder="e.g., Focus on cardiac findings and medication changes..."
+              placeholder="Optional: Add specific focus (e.g., 'Prioritize cardiac vs pulmonary etiology', 'Consider rare autoimmune causes'). Leave blank for standard 3-physician consensus analysis."
             />
           </div>
 
