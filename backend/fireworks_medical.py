@@ -1,16 +1,21 @@
 """
-BrainConnect Medical Document Analyzer - Fireworks AI Integration
+BrainConnect Medical Document Analyzer - Fireworks AI Integration (Primary)
 
-This module provides a clean interface to analyze medical PDF documents
-using Fireworks Vision Language Models (VLMs).
+Analyzes medical PDF documents using Fireworks Vision Language Models.
+Primary model: kimi-k2p6 (vision capable)
 """
 
 import base64
 import fitz  # PyMuPDF
-from fireworks.client import Fireworks
-from typing import Optional, Dict, Any, List
+import requests
 import os
+from typing import Optional, Dict, Any, List
 import json
+import time
+from dotenv import load_dotenv
+
+# Load .env file
+load_dotenv()
 
 
 CONSENSUS_MEDICAL_PROMPT = """You are a medical AI assistant simulating a consensus conference of 3 physicians analyzing a clinical case. 
@@ -26,66 +31,38 @@ CRITICAL FORMAT REQUIREMENTS:
 7. MAX 2000 words total.
 8. TONE: Polite, professional, US English, US medical standards.
 
-EXAMPLE FORMAT:
-Patient: John Doe | Consensus Differential: Acute Coronary Syndrome | Treatment Plan: Immediate PCI Pathway
-
-[Paragraph 1: Patient history...]
-
-[Paragraph 2: 
-• Dr. Smith (Cardiology): *Primary consideration* — Acute Coronary Syndrome given...
-• Dr. Chen (Emergency Medicine): *Key differential* — Aortic dissection...
-• Dr. Patel (Internal Medicine): *Must rule out* — Pulmonary embolism...]
-
-[Paragraph 3:
-• *Immediate stabilization*: Aspirin, P2Y12 inhibitor, anticoagulation...
-• *Definitive management*: Early invasive strategy with cardiac catheterization...
-• *Secondary prevention*: High-intensity statin, beta-blocker, ACE inhibitor...]
-
-[Paragraph 4: Observations and next steps...]
-
-Extract ALL clinical data from the PDF. Do not hallucinate. If information is missing, note "Not documented in provided records."""  # noqa: E501
+Extract ALL clinical data from the PDF. Do not hallucinate. If information is missing, note "Not documented in provided records.""""  # noqa: E501
 
 
 class FireworksMedicalAnalyzer:
     """
     Analyzes medical PDF documents using Fireworks Vision Language Models.
-    
-    Usage:
-        analyzer = FireworksMedicalAnalyzer(api_key="your_key")
-        result = analyzer.analyze_medical_document("path/to/document.pdf")
-        print(result["content"])
+    Primary model: kimi-k2p6 (vision capable)
     """
     
     def __init__(
         self, 
         api_key: Optional[str] = None,
-        model: str = "accounts/fireworks/models/kimi-k2p5"
+        model: str = "accounts/fireworks/models/kimi-k2p6",
+        timeout: int = 180
     ):
         """
         Initialize the analyzer.
         
         Args:
             api_key: Fireworks API key (defaults to FIREWORKS_API_KEY env var)
-            model: Fireworks model to use (default: kimi-k2p5 vision model)
+            model: Fireworks model to use (default: kimi-k2p6 - vision capable)
+            timeout: Request timeout in seconds
         """
         self.api_key = api_key or os.getenv("FIREWORKS_API_KEY")
         if not self.api_key:
             raise ValueError("Fireworks API key required. Set FIREWORKS_API_KEY env var or pass api_key parameter.")
         
         self.model = model
-        self.client = Fireworks(api_key=self.api_key)
+        self.timeout = timeout
     
-    def pdf_pages_to_base64(self, pdf_path: str, dpi: int = 200) -> List[str]:
-        """
-        Convert PDF pages to base64 encoded PNG images.
-        
-        Args:
-            pdf_path: Path to PDF file
-            dpi: Rendering resolution (default 200)
-            
-        Returns:
-            List of base64 encoded PNG strings
-        """
+    def pdf_pages_to_base64(self, pdf_path: str, dpi: int = 150) -> List[str]:
+        """Convert PDF pages to base64 encoded PNG images."""
         doc = fitz.open(pdf_path)
         images = []
         
@@ -98,17 +75,8 @@ class FireworksMedicalAnalyzer:
         doc.close()
         return images
     
-    def pdf_bytes_to_base64(self, pdf_bytes: bytes, dpi: int = 200) -> List[str]:
-        """
-        Convert PDF bytes to base64 encoded PNG images.
-        
-        Args:
-            pdf_bytes: PDF file content as bytes
-            dpi: Rendering resolution (default 200)
-            
-        Returns:
-            List of base64 encoded PNG strings
-        """
+    def pdf_bytes_to_base64(self, pdf_bytes: bytes, dpi: int = 150) -> List[str]:
+        """Convert PDF bytes to base64 encoded PNG images."""
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
         images = []
         
@@ -121,116 +89,124 @@ class FireworksMedicalAnalyzer:
         doc.close()
         return images
     
-    def analyze_medical_document(
-        self,
-        pdf_path: str,
-        prompt: Optional[str] = None,
-        dpi: int = 200
-    ) -> Dict[str, Any]:
-        """
-        Analyze a medical PDF document from file path.
+    def _call_fireworks_api(self, images_b64: List[str], prompt: str) -> Dict[str, Any]:
+        """Call Fireworks API with images and prompt."""
         
-        Args:
-            pdf_path: Path to PDF file
-            prompt: Custom analysis prompt (uses consensus prompt if None)
-            dpi: PDF rendering resolution
-            
-        Returns:
-            Dict with analysis results
-        """
-        if not os.path.exists(pdf_path):
-            raise FileNotFoundError(f"PDF not found: {pdf_path}")
-        
-        page_images = self.pdf_pages_to_base64(pdf_path, dpi=dpi)
-        
-        return self._analyze_images(page_images, prompt or CONSENSUS_MEDICAL_PROMPT)
-    
-    def analyze_medical_document_bytes(
-        self,
-        pdf_bytes: bytes,
-        prompt: Optional[str] = None,
-        dpi: int = 200
-    ) -> Dict[str, Any]:
-        """
-        Analyze a medical PDF document from bytes (e.g., uploaded file).
-        
-        Args:
-            pdf_bytes: PDF file content as bytes
-            prompt: Custom analysis prompt (uses consensus prompt if None)
-            dpi: PDF rendering resolution
-            
-        Returns:
-            Dict with analysis results
-        """
-        page_images = self.pdf_bytes_to_base64(pdf_bytes, dpi=dpi)
-        
-        return self._analyze_images(page_images, prompt or CONSENSUS_MEDICAL_PROMPT)
-    
-    def _analyze_images(self, page_images: List[str], prompt: str) -> Dict[str, Any]:
-        """
-        Send images to Fireworks VLM for analysis.
-        
-        Args:
-            page_images: List of base64 encoded PNG images
-            prompt: Analysis prompt
-            
-        Returns:
-            Dict with analysis results
-        """
-        # Build content array with text prompt and images
+        # Build payload for vision models
         content = [{"type": "text", "text": prompt}]
         
-        for img_b64 in page_images:
+        for img_b64 in images_b64:
             content.append({
                 "type": "image_url",
                 "image_url": {"url": f"data:image/png;base64,{img_b64}"}
             })
         
-        # Call Fireworks API
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": content}],
-            temperature=0.1,
-            max_tokens=4096
-        )
-        
-        # Extract response
-        message_content = response.choices[0].message.content
-        
-        return {
-            "success": True,
-            "content": message_content,
+        payload = {
             "model": self.model,
-            "pages_processed": len(page_images),
-            "usage": {
-                "prompt_tokens": response.usage.prompt_tokens if response.usage else None,
-                "completion_tokens": response.usage.completion_tokens if response.usage else None,
-                "total_tokens": response.usage.total_tokens if response.usage else None
-            }
+            "messages": [{"role": "user", "content": content}],
+            "max_tokens": 4096,
+            "temperature": 0.1
         }
+        
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(
+                    "https://api.fireworks.ai/inference/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json=payload,
+                    timeout=self.timeout
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    text = result['choices'][0]['message']['content']
+                    return {
+                        "success": True,
+                        "content": text.strip(),
+                        "model": self.model,
+                        "pages_processed": len(images_b64),
+                        "usage": result.get('usage', {})
+                    }
+                elif response.status_code == 503:
+                    wait_time = 10 * (attempt + 1)
+                    print(f"Model loading, waiting {wait_time}s... (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    return {"success": False, "error": f"Fireworks API error {response.status_code}: {response.text[:200]}"}
+                    
+            except requests.exceptions.Timeout:
+                return {"success": False, "error": "Request timeout"}
+            except Exception as e:
+                return {"success": False, "error": str(e)}
+        
+        return {"success": False, "error": "Max retries exceeded"}
+    
+    def analyze_medical_document(
+        self,
+        self,
+        pdf_path: str,
+        prompt: Optional[str] = None,
+        dpi: int = 150
+    ) -> Dict[str, Any]:
+        """Analyze a medical PDF document from file path."""
+        if not os.path.exists(pdf_path):
+            raise FileNotFoundError(f"PDF not found: {pdf_path}")
+        
+        page_images = self.pdf_pages_to_base64(pdf_path, dpi=dpi)
+        return self._call_fireworks_api(page_images, prompt or CONSENSUS_MEDICAL_PROMPT)
+    
+    def analyze_medical_document_bytes(
+        self,
+        pdf_bytes: bytes,
+        prompt: Optional[str] = None,
+        dpi: int = 150
+    ) -> Dict[str, Any]:
+        """Analyze a medical PDF document from bytes."""
+        page_images = self.pdf_bytes_to_base64(pdf_bytes, dpi=dpi)
+        return self._call_fireworks_api(page_images, prompt or CONSENSUS_MEDICAL_PROMPT)
+    
+    def pdf_pages_to_base64(self, pdf_path: str, dpi: int = 150) -> List[str]:
+        """Convert PDF pages to base64 encoded PNG images."""
+        doc = fitz.open(pdf_path)
+        images = []
+        
+        for page_num, page in enumerate(doc):
+            pix = page.get_pixmap(dpi=dpi)
+            img_bytes = pix.tobytes("png")
+            img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+            images.append(img_b64)
+        
+        doc.close()
+        return images
+    
+    def pdf_bytes_to_base64(self, pdf_bytes: bytes, dpi: int = 150) -> List[str]:
+        """Convert PDF bytes to base64 encoded PNG images."""
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        images = []
+        
+        for page_num, page in enumerate(doc):
+            pix = page.get_pixmap(dpi=dpi)
+            img_bytes = pix.tobytes("png")
+            img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+            images.append(img_b64)
+        
+        doc.close()
+        return images
 
 
-# Convenience function for quick analysis
+# Convenience function
 def analyze_pdf_with_fireworks(
     pdf_path: str,
     api_key: Optional[str] = None,
     prompt: Optional[str] = None,
-    model: str = "accounts/fireworks/models/kimi-k2p5",
-    dpi: int = 200
+    model: str = "accounts/fireworks/models/kimi-k2p6",
+    dpi: int = 150
 ) -> Dict[str, Any]:
-    """
-    Convenience function to analyze a medical PDF with Fireworks.
-    
-    Args:
-        pdf_path: Path to PDF file
-        api_key: Fireworks API key (uses env var if not provided)
-        prompt: Custom prompt (uses consensus prompt if None)
-        model: Fireworks model to use
-        dpi: PDF rendering resolution
-        
-    Returns:
-        Dict with analysis results
-    """
     analyzer = FireworksMedicalAnalyzer(api_key=api_key, model=model)
     return analyzer.analyze_medical_document(
         pdf_path=pdf_path,

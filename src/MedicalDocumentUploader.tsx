@@ -102,7 +102,7 @@ export default function MedicalDocumentUploader() {
 
       setUploadState({ status: 'analyzing', message: 'Analyzing with Fireworks AI...' })
 
-      const result: AnalysisResult = await uploadResponse.json()
+      const result = await uploadResponse.json()
 
       if (!uploadResponse.ok || !result.success) {
         throw new Error(result.error || 'Analysis failed')
@@ -163,7 +163,7 @@ export default function MedicalDocumentUploader() {
             className={`border-2 border-dashed rounded-t-xl p-8 transition-all ${
               dragActive 
                 ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-300 hover:border-gray-400'
+                : 'border-gray-300 bg-white hover:border-gray-400'
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -199,25 +199,25 @@ export default function MedicalDocumentUploader() {
                   : 'Drag & drop a medical PDF, or click to browse'}
               </p>
               <p className="mt-1 text-sm text-gray-500">
-                PDF only • Max 20MB • Medical records, radiology reports, lab results
+                Supports: PDF • Max 20MB • Medical records, radiology reports, lab results
               </p>
               
               {!selectedFile && (
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="mt-4 inline-flex items-center px-5 py-2.5 border border-transparent text-base font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  className="mt-4 inline-flex items-center px-5 py-2.5 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                   </svg>
-                  Choose PDF File
+                  Choose File
                 </button>
               )}
             </div>
           </div>
 
-          {/* Selected File Info */}
+          {/* Selected File Info & Actions */}
           {selectedFile && (
             <div className="px-8 py-4 border-t border-gray-100 bg-gray-50">
               <div className="flex items-center justify-between">
@@ -246,14 +246,14 @@ export default function MedicalDocumentUploader() {
               Custom Analysis Prompt (Optional)
             </label>
             <p className="text-sm text-gray-500 mb-3">
-              Leave blank to use default medical extraction prompt. Customize for specific analysis needs.
+              Leave blank to use default 3-physician consensus medical analysis prompt. Customize for specific analysis needs.
             </p>
             <textarea
               value={customPrompt}
               onChange={(e) => setCustomPrompt(e.target.value)}
               rows={4}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono resize-y"
-              placeholder="Optional: Add specific focus (e.g., 'Prioritize cardiac vs pulmonary etiology', 'Consider rare autoimmune causes'). Leave blank for standard 3-physician consensus analysis."
+              placeholder="e.g., Focus on cardiac findings and medication changes..."
             />
           </div>
 
@@ -293,13 +293,13 @@ export default function MedicalDocumentUploader() {
                 {uploadState.status === 'uploading' && (
                   <svg className="animate-spin h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
                 )}
                 {uploadState.status === 'analyzing' && (
                   <svg className="animate-spin h-6 w-6 mr-3 text-blue-600" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
                 )}
                 {uploadState.status === 'success' && (
@@ -370,20 +370,20 @@ export default function MedicalDocumentUploader() {
               )}
             </div>
           )}
-        </div>
 
-        {/* Info Card */}
-        <div className="mt-8 p-6 bg-indigo-50 rounded-xl border border-indigo-100">
-          <h3 className="text-lg font-medium text-indigo-800 mb-3">How it works</h3>
-          <ul className="text-sm text-indigo-700 space-y-2">
-            <li className="flex items-start"><svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0 text-indigo-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>Upload a medical PDF (patient history, radiology report, lab results, discharge summary)</li>
-            <li className="flex items-start"><svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0 text-indigo-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>PDF pages are converted to images and sent to Fireworks Vision Language Model (kimi-k2p5)</li>
-            <li className="flex items-start"><svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0 text-indigo-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>AI extracts structured clinical data: demographics, complaints, history, labs, imaging, assessment, plan</li>
-            <li className="flex items-start"><svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0 text-indigo-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>Results returned as structured JSON for integration into BrainConnect multi-agent pipeline</li>
-          </ul>
-          <p className="mt-4 text-sm text-indigo-600">
-            <strong>Backend:</strong> FastAPI + Fireworks AI | <strong>Frontend:</strong> React + Vite + Tailwind
-          </p>
+          {/* Info Section */}
+          <div className="mt-8 p-6 bg-indigo-50 rounded-xl border border-indigo-100">
+            <h3 className="text-lg font-medium text-indigo-800 mb-3">How it works</h3>
+            <ul className="text-sm text-indigo-700 space-y-2">
+              <li className="flex items-start"><svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0 text-indigo-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>Upload a medical PDF (patient history, radiology report, lab results, discharge summary)</li>
+              <li className="flex items-start"><svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0 text-indigo-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>PDF pages are converted to images and sent to Fireworks Vision Language Model (kimi-k2p6)</li>
+              <li className="flex items-start"><svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0 text-indigo-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>AI returns structured 4-paragraph consensus: patient history, 3-physician differentials, 3 treatment plans, observations</li>
+              <li className="flex items-start"><svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0 text-indigo-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>Results returned as structured text with metadata (pages, tokens, model info)</li>
+            </ul>
+            <p className="mt-4 text-sm text-indigo-600">
+              <strong>Backend:</strong> FastAPI + Fireworks AI | <strong>Frontend:</strong> React + Vite + Tailwind
+            </p>
+          </div>
         </div>
       </div>
     </div>

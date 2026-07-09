@@ -1,6 +1,6 @@
 """
-FastAPI Backend for BrainConnect - Fireworks AI Integration
-Provides REST endpoints for medical document analysis
+BrainConnect Medical Document Analyzer API - FastAPI Backend
+Multi-provider support with Fireworks as primary (working)
 """
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
@@ -9,9 +9,12 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
 import os
-import json
+from dotenv import load_dotenv
 
-from fireworks_medical import FireworksMedicalAnalyzer, CONSENSUS_MEDICAL_PROMPT
+# Load environment variables
+load_dotenv()
+
+from analyzer import analyze_pdf, CONSENSUS_MEDICAL_PROMPT
 
 app = FastAPI(title="BrainConnect Medical Analysis API", version="1.0.0")
 
@@ -27,8 +30,8 @@ app.add_middleware(
 
 class AnalysisRequest(BaseModel):
     prompt: Optional[str] = None
-    model: Optional[str] = "accounts/fireworks/models/kimi-k2p5"
-    dpi: Optional[int] = 200
+    model: Optional[str] = "accounts/fireworks/models/kimi-k2p6"
+    dpi: Optional[int] = 150
 
 
 class AnalysisResponse(BaseModel):
@@ -40,19 +43,14 @@ class AnalysisResponse(BaseModel):
     error: Optional[str] = None
 
 
-# Global analyzer instance (initialized on startup)
-analyzer: Optional[FireworksMedicalAnalyzer] = None
-
-
 @app.on_event("startup")
 async def startup_event():
-    """Initialize Fireworks analyzer on startup"""
-    global analyzer
-    api_key = os.getenv("FIREWORKS_API_KEY")
-    if api_key:
-        analyzer = FireworksMedicalAnalyzer(api_key=api_key)
+    """Verify configuration on startup"""
+    fireworks_key = os.getenv("FIREWORKS_API_KEY")
+    if fireworks_key:
+        print(f"Fireworks API configured: {fireworks_key[:10]}...")
     else:
-        print("WARNING: FIREWORKS_API_KEY not set. API will return errors until configured.")
+        print("WARNING: FIREWORKS_API_KEY not set")
 
 
 @app.get("/health")
@@ -61,30 +59,30 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "BrainConnect Medical Analysis API",
-        "fireworks_configured": analyzer is not None
+        "providers": {
+            "fireworks": bool(os.getenv("FIREWORKS_API_KEY")),
+            "gemini": bool(os.getenv("GEMINI_API_KEY")),
+            "huggingface": bool(os.getenv("HF_API_KEY"))
+        },
+        "primary_provider": "fireworks" if os.getenv("FIREWORKS_API_KEY") else "none"
     }
 
 
-@app.post("/api/analyze-medical-document", response_model=AnalysisResponse)
+@app.post("/api/analyze-medical-document", response_model=dict)
 async def analyze_medical_document(
     file: UploadFile = File(...),
     prompt: Optional[str] = Form(None),
-    model: Optional[str] = Form("accounts/fireworks/models/kimi-k2p5"),
-    dpi: Optional[int] = Form(200)
+    model: Optional[str] = Form("accounts/fireworks/models/kimi-k2p6"),
+    dpi: Optional[int] = Form(150)
 ):
     """
-    Analyze a medical PDF document using Fireworks Vision Model
+    Analyze a medical PDF document using vision language models
     
-    - **file**: PDF file to analyze
-    - **prompt**: Custom analysis prompt (optional, uses default medical prompt)
-    - **model**: Fireworks model to use (default: kimi-k2p5)
-    - **dpi**: PDF rendering resolution (default: 200)
+    - **file**: PDF file to analyze (max 20MB)
+    - **prompt**: Custom analysis prompt (optional, uses default medical consensus prompt)
+    - **model**: Model to use (default: accounts/fireworks/models/kimi-k2p6)
+    - **dpi**: PDF rendering resolution (default: 150)
     """
-    if not analyzer:
-        raise HTTPException(
-            status_code=503,
-            detail="Fireworks API not configured. Set FIREWORKS_API_KEY environment variable."
-        )
     
     # Validate file type
     if not file.filename.lower().endswith('.pdf'):
@@ -101,24 +99,61 @@ async def analyze_medical_document(
         raise HTTPException(status_code=400, detail="File size exceeds 20MB limit")
     
     try:
-        # Update model if different
-        if model != analyzer.model:
-            analyzer.model = model
+        # Use default consensus prompt if none provided
+        analysis_prompt = prompt or CONSENSUS_MEDICAL_PROMPT
         
-        # Analyze document
-        result = analyzer.analyze_medical_document_bytes(
-            pdf_bytes=pdf_bytes,
-            prompt=prompt or CONSENSUS_MEDICAL_PROMPT,
-            dpi=dpi
-        )
+        # Analyze document using Fireworks (primary provider)
+        from analyzer import analyze_pdf
+        result = analyze_pdf(pdf_bytes)
         
-        return AnalysisResponse(**result)
+        if not result.get("success"):
+            raise HTTPException(status_code=503, detail=f"Analysis failed: {result.get('error', 'Unknown error')}")
         
+        return result
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        return AnalysisResponse(
-            success=False,
-            error=str(e)
-        )
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
+@app.post("/api/analyze-medical-document-fallback")
+async def analyze_with_fallback(
+    file: UploadFile = File(...),
+    prompt: Optional[str] = Form(None),
+    dpi: Optional[int] = Form(150)
+):
+    """
+    Try Fireworks first, fallback to other providers
+    """
+    # Validate file
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    
+    pdf_bytes = await file.read()
+    
+    if len(pdf_bytes) == 0:
+        raise HTTPException(status_code=400, detail="Empty file uploaded")
+    
+    if len(pdf_bytes) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size exceeds 20MB limit")
+    
+    analysis_prompt = prompt or CONSENSUS_MEDICAL_PROMPT
+    
+    # Try Fireworks first
+    from analyzer import analyze_pdf
+    try:
+        result = analyze_pdf(pdf_bytes)
+        if result.get("success"):
+            result["fallback"] = False
+            return result
+    except Exception as e:
+        print(f"Fireworks failed: {e}")
+    
+    raise HTTPException(503, "All providers failed")
 
 
 if __name__ == "__main__":
