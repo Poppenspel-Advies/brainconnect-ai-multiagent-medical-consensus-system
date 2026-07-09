@@ -1,6 +1,6 @@
 """
 BrainConnect Medical Document Analyzer API - FastAPI Backend
-Multi-provider support with Fireworks as primary (working)
+Fireworks AI as primary provider
 """
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
@@ -61,8 +61,6 @@ async def health_check():
         "service": "BrainConnect Medical Analysis API",
         "providers": {
             "fireworks": bool(os.getenv("FIREWORKS_API_KEY")),
-            "gemini": bool(os.getenv("GEMINI_API_KEY")),
-            "huggingface": bool(os.getenv("HF_API_KEY"))
         },
         "primary_provider": "fireworks" if os.getenv("FIREWORKS_API_KEY") else "none"
     }
@@ -76,7 +74,7 @@ async def analyze_medical_document(
     dpi: Optional[int] = Form(150)
 ):
     """
-    Analyze a medical PDF document using vision language models
+    Analyze a medical PDF document using Fireworks vision models
     
     - **file**: PDF file to analyze (max 20MB)
     - **prompt**: Custom analysis prompt (optional, uses default medical consensus prompt)
@@ -118,42 +116,6 @@ async def analyze_medical_document(
             "success": False,
             "error": str(e)
         }
-
-
-@app.post("/api/analyze-medical-document-fallback")
-async def analyze_with_fallback(
-    file: UploadFile = File(...),
-    prompt: Optional[str] = Form(None),
-    dpi: Optional[int] = Form(150)
-):
-    """
-    Try Fireworks first, fallback to other providers
-    """
-    # Validate file
-    if not file.filename.lower().endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
-    
-    pdf_bytes = await file.read()
-    
-    if len(pdf_bytes) == 0:
-        raise HTTPException(status_code=400, detail="Empty file uploaded")
-    
-    if len(pdf_bytes) > 20 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File size exceeds 20MB limit")
-    
-    analysis_prompt = prompt or CONSENSUS_MEDICAL_PROMPT
-    
-    # Try Fireworks first
-    from analyzer import analyze_pdf
-    try:
-        result = analyze_pdf(pdf_bytes)
-        if result.get("success"):
-            result["fallback"] = False
-            return result
-    except Exception as e:
-        print(f"Fireworks failed: {e}")
-    
-    raise HTTPException(503, "All providers failed")
 
 
 if __name__ == "__main__":
