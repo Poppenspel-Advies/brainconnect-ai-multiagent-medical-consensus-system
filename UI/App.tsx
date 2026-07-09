@@ -21,10 +21,13 @@ export default function BrainConnectApp() {
   const apiUrl =
     import.meta.env.VITE_ANALYZE_URL || "http://localhost:8000/api/analyze";
 
+  const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB - matches backend limit
+
   const validateFile = (file: File) => {
+    const isUnderLimit = file.size <= MAX_FILE_SIZE;
     const isPdf =
       file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-    return isPdf;
+      return isPdf && isUnderLimit;
   };
 
   const handleFileSelection = (event: ChangeEvent<HTMLInputElement>) => {
@@ -312,7 +315,7 @@ export default function BrainConnectApp() {
                   </div>
                   <div>
                     <p className="text-2xl font-medium">Drop your PDF here or browse files</p>
-                    <p className="text-sm text-gray-500 mt-2">Supports patient history, radiology reports, and labs • Max 50MB</p>
+                    <p className="text-sm text-gray-500 mt-2">Supports patient history, radiology reports, and labs • Max 20MB</p>
                   </div>
                 </div>
               ) : (
