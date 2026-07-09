@@ -1,5 +1,5 @@
 import { ChangeEvent, FormEvent, useRef, useState } from "react";
-import logo from "./logo.png";
+// Logo imported inline as SVG
 
 type AnalysisResponse = {
   summary: string;
@@ -153,7 +153,7 @@ export default function BrainConnectApp() {
         <div className="max-w-7xl mx-auto px-8 py-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-x-4">
             <div className="w-10 h-10 flex items-center justify-center rounded-3xl bg-white/10 overflow-hidden">
-              <img src={logo} alt="BrainConnect logo" className="w-full h-full object-cover" />
+              <svg viewBox="0 0 32 32" fill="none" className="w-full h-full"><rect width="32" height="32" rx="8" fill="url(#grad)"/><path d="M16 8C11.5817 8 8 11.5817 8 16C8 20.4183 11.5817 24 16 24C20.4183 24 24 20.4183 24 16C24 11.5817 20.4183 8 16 8Z" stroke="white" stroke-width="2.5"/><path d="M8 22h16" stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.3"/><defs><linearGradient id="grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#06B6D4"/></linearGradient></defs></svg>
             </div>
             <div className="flex flex-col leading-none">
               <span className="text-3xl font-semibold tracking-tighter font-space text-white">Brain</span>
