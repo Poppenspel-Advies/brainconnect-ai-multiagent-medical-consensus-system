@@ -8,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
+from dotenv import load_dotenv
+load_dotenv()
 import os
 import json
 
@@ -27,7 +29,7 @@ app.add_middleware(
 
 class AnalysisRequest(BaseModel):
     prompt: Optional[str] = None
-    model: Optional[str] = "accounts/fireworks/models/kimi-k2p5"
+    model: Optional[str] = "accounts/fireworks/models/kimi-k2p6"
     dpi: Optional[int] = 200
 
 
@@ -69,7 +71,7 @@ async def health_check():
 async def analyze_medical_document(
     file: UploadFile = File(...),
     prompt: Optional[str] = Form(None),
-    model: Optional[str] = Form("accounts/fireworks/models/kimi-k2p5"),
+    model: Optional[str] = Form("accounts/fireworks/models/kimi-k2p6"),
     dpi: Optional[int] = Form(200)
 ):
     """
@@ -77,7 +79,7 @@ async def analyze_medical_document(
     
     - **file**: PDF file to analyze
     - **prompt**: Custom analysis prompt (optional, uses default medical prompt)
-    - **model**: Fireworks model to use (default: kimi-k2p5)
+    - **model**: Fireworks model to use (default: kimi-k2p6)
     - **dpi**: PDF rendering resolution (default: 200)
     """
     if not analyzer:
