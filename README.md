@@ -85,7 +85,7 @@ Analyze a medical PDF document.
 **Request:**
 - `file` (multipart/form-data): PDF file
 - `prompt` (optional): Custom analysis prompt
-- `model` (optional): Fireworks model (default: `accounts/fireworks/models/kimi-k2p5`)
+- `model` (optional): Fireworks model (default: `accounts/fireworks/models/kimi-k2p6`)
 - `dpi` (optional): PDF render resolution (default: 200)
 
 **Response:**
@@ -93,7 +93,7 @@ Analyze a medical PDF document.
 {
   "success": true,
   "content": { ...structured medical data... },
-  "model": "accounts/fireworks/models/kimi-k2p5",
+  "model": "accounts/fireworks/models/kimi-k2p6",
   "pages_processed": 5,
   "usage": {
     "prompt_tokens": 1234,
