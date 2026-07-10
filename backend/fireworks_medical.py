@@ -13,15 +13,15 @@ import os
 import json
 
 
-CONSENSUS_MEDICAL_PROMPT = """You are a medical AI assistant simulating a consensus conference of 3 physicians analyzing a clinical case. 
+CONSENSUS_MEDICAL_PROMPT = """You are a medical AI assistant simulating a consensus conference of physicians analyzing a clinical case. 
 Provide consensus-driven differential diagnoses and personalized treatment plans.
 
 CRITICAL FORMAT REQUIREMENTS:
-1. RESPONSE MUST BE EXACTLY 4 PARAGRAPHS
+1. RESPONSE MUST CONTENT SEPARATE ONE TITEL LINE AND EXACTLY 4 PARAGRAPHS WITH BELOW DETAILS
 2. TITLE LINE: "Patient: [Name] | Consensus Differential: [Diagnosis 1] | Treatment Plan: [Plan 1]"
 3. PARAGRAPH 1: Patient history from the PDF (demographics, chief complaint, HPI, PMH, meds, allergies, exam, labs, imaging, assessment)
-4. PARAGRAPH 2: 3 physicians' consensus differential diagnoses in bullet points. Key phrases in *italics*.
-5. PARAGRAPH 3: 3 personalized treatment plans in bullet points. Key phases in *italics*.
+4. PARAGRAPH 2: Physicians'  and their consensus-driven differential diagnoses in bullet points. Key phrases in *italics*.
+5. PARAGRAPH 3: Personalized treatment plans in bullet points. Key phases in *italics*.
 6. PARAGRAPH 4: Observations, next steps, future treatment suggestions.
 7. MAX 2000 words total.
 8. TONE: Polite, professional, US English, US medical standards.
@@ -43,7 +43,7 @@ Patient: John Doe | Consensus Differential: Acute Coronary Syndrome | Treatment 
 
 [Paragraph 4: Observations and next steps...]
 
-Extract ALL clinical data from the PDF. Do not hallucinate. If information is missing, note "Not documented in provided records."""  # noqa: E501
+Extract ALL clinical data from the PDF. Do not hallucinate. If information is missing, note "Not documented in provided records. Do not repeat user request and your analysis of the patient details for the pdf in response. Do not provide deatils of what you need to follow strict formatting requirements in response. Do not provide details of your extract of the clinical data first in response. Do not provide extract all clinical data from the images in response. Do not reapt in any Paragraph what you have to include in response."""  # noqa: E501
 
 
 class FireworksMedicalAnalyzer:
@@ -59,14 +59,14 @@ class FireworksMedicalAnalyzer:
     def __init__(
         self, 
         api_key: Optional[str] = None,
-        model: str = "accounts/fireworks/models/kimi-k2p5"
+        model: str = "accounts/fireworks/models/kimi-k2p6"
     ):
         """
         Initialize the analyzer.
         
         Args:
             api_key: Fireworks API key (defaults to FIREWORKS_API_KEY env var)
-            model: Fireworks model to use (default: kimi-k2p5 vision model)
+            model: Fireworks model to use (default: kimi-k2p6 vision model)
         """
         self.api_key = api_key or os.getenv("FIREWORKS_API_KEY")
         if not self.api_key:
@@ -215,7 +215,7 @@ def analyze_pdf_with_fireworks(
     pdf_path: str,
     api_key: Optional[str] = None,
     prompt: Optional[str] = None,
-    model: str = "accounts/fireworks/models/kimi-k2p5",
+    model: str = "accounts/fireworks/models/kimi-k2p6",
     dpi: int = 200
 ) -> Dict[str, Any]:
     """
