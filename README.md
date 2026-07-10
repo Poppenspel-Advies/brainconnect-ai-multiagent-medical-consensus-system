@@ -125,7 +125,7 @@ Custom prompts can be provided via the UI or API.
 ## Fireworks Models
 
 Supported vision models:
-- `accounts/fireworks/models/kimi-k2p5` (default - strong vision capabilities)
+- `accounts/fireworks/models/kimi-k2p6` (default - strong vision capabilities)
 - `accounts/fireworks/models/llama-v3p2-11b-vision-instruct`
 - `accounts/fireworks/models/llama-v3p2-90b-vision-instruct`
 
