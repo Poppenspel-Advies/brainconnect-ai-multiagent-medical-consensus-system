@@ -99,6 +99,10 @@ export default function BrainConnectApp() {
 
       const data = (await response.json()) as Partial<AnalysisResponse>;
 
+      if (!data.content) {
+        throw new Error("Unexpected response format");
+      }
+
       const apiResponse = data.content;
 
       const startIndexPara1 = apiResponse.indexOf("Paragraph 1:");
@@ -120,13 +124,12 @@ export default function BrainConnectApp() {
          ? apiResponse.substring(endIndexPara2, endIndexPara3) 
          : apiResponse;
 
+      // Extract paragraph 4
       const extractedParagraph4 = startIndexPara1 !== -1 
          ? apiResponse.substring(endIndexPara3, endIndexPara4) 
          : apiResponse;
       
-      if (!data.content) {
-        throw new Error("Unexpected response format");
-      }
+      
 
       setAnalysis({
         content: data.content,
