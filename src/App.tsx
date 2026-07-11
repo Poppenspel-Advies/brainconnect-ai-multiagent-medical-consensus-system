@@ -1,4 +1,5 @@
 import { ChangeEvent, FormEvent, useRef, useState } from "react";
+import myVideo from '/public/brainConnectAIDemoVideo.mp4';
 // Logo imported inline as SVG
 
 type AnalysisResponse = {
@@ -27,7 +28,11 @@ export default function BrainConnectApp() {
       file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
       return isPdf && isUnderLimit;
   };
-
+  // 1. Separate function that opens the video in a new page
+  const openVideoInNewTab = (videoUrl) => {
+    window.open(videoUrl, '_blank');
+  };
+  
   const handleFileSelection = (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
 
@@ -208,7 +213,7 @@ export default function BrainConnectApp() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => alert("🎥 In a real demo, this would play a 30-second video showcasing the multi-agent workflow.")}
+                  onClick={() => openVideoInNewTab(myVideo)}
                   className="px-8 py-5 border border-white/30 hover:border-white/60 rounded-3xl font-medium transition-all"
                 >
                   Watch 30s Demo
