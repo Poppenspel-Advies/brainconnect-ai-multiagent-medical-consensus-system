@@ -4,6 +4,10 @@ import myVideo from '/public/brainConnectAIDemoVideo.mp4';
 
 type AnalysisResponse = {
   content: string;
+  history: string;
+  differentialDiagnoses: string;
+  personalizedTreatment: string;
+  observations: string;
 };
 
 export default function BrainConnectApp() {
@@ -95,12 +99,41 @@ export default function BrainConnectApp() {
 
       const data = (await response.json()) as Partial<AnalysisResponse>;
 
+      const apiResponse = data.content;
+
+      const startIndexPara1 = apiResponse.indexOf("Paragraph 1:");
+      const endIndexPara1 = apiResponse.indexOf("Paragraph 2:");
+      const endIndexPara2 = apiResponse.indexOf("Paragraph 3:");
+      const endIndexPara3 = apiResponse.indexOf("Paragraph 4:");
+       const endIndexPara4 = apiResponse.indexOf("Paragraph 5:");
+      // Extract paragraph 1
+    const extractedParagraph1 = startIndexPara1 !== -1 
+         ? apiResponse.substring(startIndexPara1, endIndexPara1) 
+         : apiResponse;
+    // Extract paragraph 2
+    const extractedParagraph2 = startIndexPara1 !== -1 
+         ? apiResponse.substring(endIndexPara1, endIndexPara2) 
+         : apiResponse;
+
+      // Extract paragraph 3
+    const extractedParagraph3 = startIndexPara1 !== -1 
+         ? apiResponse.substring(endIndexPara2, endIndexPara3) 
+         : apiResponse;
+
+      const extractedParagraph4 = startIndexPara1 !== -1 
+         ? apiResponse.substring(endIndexPara3, endIndexPara4) 
+         : apiResponse;
+      
       if (!data.content) {
         throw new Error("Unexpected response format");
       }
 
       setAnalysis({
         content: data.content,
+        history: extractedParagraph1,
+        differentialDiagnoses: extractedParagraph2,
+        personalizedTreatment: extractedParagraph3,
+        observations: extractedParagraph4,
       });
       setShowResults(true);
     } catch {
@@ -352,12 +385,23 @@ export default function BrainConnectApp() {
 
           {showResults && analysis && (
             <div className="mt-16 space-y-12">
-              <div className="grid gap-6 lg:grid-cols-1">
+              <div className="grid gap-6 lg:grid-cols-4">
                 <div className="bg-[#0A2540] p-8 rounded-3xl border border-blue-500/50">
-                  <div className="text-blue-400 text-sm font-medium tracking-widest mb-2">CONTENT</div>
-                  <div className="text-gray-300 leading-relaxed">{analysis.content}</div>
+                  <div className="text-blue-400 text-sm font-medium tracking-widest mb-2">HISTORY</div>
+                  <div className="text-gray-300 leading-relaxed">{analysis.history}</div>
                 </div>
-              </div>
+                <div className="bg-[#0A2540] p-8 rounded-3xl border border-white/10 hover:border-white/30">
+                  <div className="text-amber-400 text-sm font-medium tracking-widest mb-2">DIFFERENTIAL DIAGNOSIS</div>
+                  <div className="text-gray-300 leading-relaxed">{analysis.differentialDiagnoses}</div>
+                </div>
+                <div className="bg-[#0A2540] p-8 rounded-3xl border border-white/10 hover:border-white/30">
+                  <div className="text-emerald-400 text-sm font-medium tracking-widest mb-2">TREATMENT PLAN</div>
+                  <div className="text-gray-300 leading-relaxed">{analysis.personalizedTreatment}</div>
+                </div>
+                <div className="bg-[#0A2540] p-8 rounded-3xl border border-white/10 hover:border-white/30">
+                  <div className="text-blue-400 text-sm font-medium tracking-widest mb-2">FUTURE PLAN</div>
+                  <div className="text-gray-300 leading-relaxed">{analysis.observations}</div>
+                </div>
 
               <div className="bg-[#0A2540]/70 border border-white/10 rounded-3xl p-8 text-sm">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
