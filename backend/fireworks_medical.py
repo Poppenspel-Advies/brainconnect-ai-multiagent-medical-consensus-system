@@ -13,18 +13,17 @@ import os
 import json
 
 
-CONSENSUS_MEDICAL_PROMPT = """You are a medical AI assistant simulating a consensus conference of physicians analyzing a clinical case. 
-Provide consensus-driven differential diagnoses and personalized treatment plans.
+CONSENSUS_MEDICAL_PROMPT = """You are a medical AI assistant in a consensus conference of physicians analyzing a clinical case. 
+Provide consensus-driven differential diagnoses and personalized treatment plans for the Patient from the pdf passed. Include all below information only in response and no other information from the pdf.
 
 CRITICAL FORMAT REQUIREMENTS:
-1. RESPONSE MUST CONTENT SEPARATE ONE TITEL LINE AND EXACTLY 4 PARAGRAPHS WITH BELOW DETAILS
-2. TITLE LINE: "Patient: [Name] | Consensus Differential: [Diagnosis 1] | Treatment Plan: [Plan 1]"
-3. PARAGRAPH 1: Patient history from the PDF (demographics, chief complaint, HPI, PMH, meds, allergies, exam, labs, imaging, assessment)
-4. PARAGRAPH 2: Physicians'  and their consensus-driven differential diagnoses in bullet points. Key phrases in *italics*.
-5. PARAGRAPH 3: Personalized treatment plans in bullet points. Key phases in *italics*.
-6. PARAGRAPH 4: Observations, next steps, future treatment suggestions.
-7. MAX 2000 words total.
-8. TONE: Polite, professional, US English, US medical standards.
+1. RESPONSE MUST CONTENT EXACTLY 5 PARAGRAPHS WITH BELOW DETAILS AND NO OTHER DETAILS
+2. **PARAGRAPH 1: Patient history from the PDF (demographics, chief complaint, HPI, PMH, meds, allergies, exam, labs, imaging, assessment) & lifestyle and 200 word count.
+3. **PARAGRAPH 2: Physicians'  and their consensus-driven differential diagnoses in bullet points. Important phrases in *italics* and 200 word count.
+4. **PARAGRAPH 3: Personalized treatment plans in bullet points. Important phases in *italics* and 200 word count.
+5. **PARAGRAPH 4: Observations, next steps, future treatment suggestions with 200 word count.
+6. **PARAGRAPH 5: empty paragraph.
+7. TONE: Polite, professional, US English, US medical standards.
 
 EXAMPLE FORMAT:
 Patient: John Doe | Consensus Differential: Acute Coronary Syndrome | Treatment Plan: Immediate PCI Pathway
@@ -32,9 +31,9 @@ Patient: John Doe | Consensus Differential: Acute Coronary Syndrome | Treatment 
 [Paragraph 1: Patient history...]
 
 [Paragraph 2: 
-• Dr. Smith (Cardiology): *Primary consideration* — Acute Coronary Syndrome given...
-• Dr. Chen (Emergency Medicine): *Key differential* — Aortic dissection...
-• Dr. Patel (Internal Medicine): *Must rule out* — Pulmonary embolism...]
+• *Primary consideration* — Acute Coronary Syndrome given...
+• *Key differential* — Aortic dissection...
+• *Must rule out* — Pulmonary embolism...]
 
 [Paragraph 3:
 • *Immediate stabilization*: Aspirin, P2Y12 inhibitor, anticoagulation...
@@ -43,7 +42,9 @@ Patient: John Doe | Consensus Differential: Acute Coronary Syndrome | Treatment 
 
 [Paragraph 4: Observations and next steps...]
 
-Extract ALL clinical data from the PDF. Do not hallucinate. If information is missing, note "Not documented in provided records. Do not repeat user request and your analysis of the patient details for the pdf in response. Do not provide deatils of what you need to follow strict formatting requirements in response. Do not provide details of your extract of the clinical data first in response. Do not provide extract all clinical data from the images in response. Do not reapt in any Paragraph what you have to include in response."""  # noqa: E501
+[PARAGRAPH 5: ]
+
+Extract above response from the given PDF. Do not hallucinate. If information is missing, note "Not documented" in provided records. Do not repeat user request and your analysis of the patient details for the pdf in response. Do not provide details of what you need to follow strict formatting requirements in response. Do not provide details of your extract of the clinical data first in response. Do not repeat in any Paragraph what you have to include in response. Do not send your draft response, send your final response."""  # noqa: E501
 
 
 class FireworksMedicalAnalyzer:
