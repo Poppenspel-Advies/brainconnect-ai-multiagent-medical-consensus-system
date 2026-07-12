@@ -18,7 +18,7 @@ Provide consensus-driven differential diagnoses and personalized treatment plans
 Don't include extraneous information. But you need to include the requested below 5 paragraphs in response. Do not include how you need to format the response into exactly 5 paragraphs.
 
 CRITICAL FORMAT REQUIREMENTS:
-1. RESPONSE MUST CONTENT EXACTLY 5 PARAGRAPHS WITH BELOW DETAILS AND NO OTHER DETAILS
+1. RESPONSE MUST CONTENT EXACTLY 5 PARAGRAPHS WITH BELOW DETAILS
 2. **PARAGRAPH 1: Patient history from the PDF (demographics, chief complaint, HPI, PMH, meds, allergies, exam, labs, imaging, assessment) & lifestyle and 200 word count.
 3. **PARAGRAPH 2: Physicians'  and their consensus-driven differential diagnoses in bullet points. Important phrases in *italics* and 200 word count.
 4. **PARAGRAPH 3: Personalized treatment plans in bullet points. Important phases in *italics* and 200 word count.
